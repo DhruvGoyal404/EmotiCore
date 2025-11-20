@@ -1,0 +1,70 @@
+# Multimodal Emotion Detection System - Dependencies
+# Install with: pip install -r requirements.txt
+# Compatible with Python 3.10-3.13
+
+# Core ML/DL Frameworks
+# TensorFlow 2.15 for DeepFace compatibility (Keras 3.x causes issues with newer versions)
+tensorflow==2.15.0
+tf-keras==2.15.0
+scikit-learn>=1.3.0
+xgboost>=2.0.0
+joblib>=1.3.0
+
+# Data Processing
+# Numpy <2.0 required for TensorFlow 2.15 compatibility
+numpy<2.0,>=1.23.5
+pandas>=2.0.0
+scipy>=1.11.0
+
+# Computer Vision
+opencv-python>=4.8.0
+# DeepFace 0.0.92 tested with TensorFlow 2.15
+deepface==0.0.92
+Pillow>=10.0.0
+mtcnn>=0.1.1
+
+# NLP
+nltk>=3.8.0
+
+# Web Frameworks
+streamlit>=1.29.0
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-multipart>=0.0.6
+websockets>=12.0
+
+# Data Visualization
+matplotlib>=3.8.0
+seaborn>=0.13.0
+altair>=5.0.0
+
+# Kaggle API
+kaggle>=1.5.0
+
+# Utilities
+tqdm>=4.66.0
+python-dotenv>=1.0.0
+pydantic>=2.5.0
+
+# Image/File handling
+aiofiles>=23.0.0
+
+# Testing (optional)
+pytest>=7.4.0
+httpx>=0.25.0
+
+# IMPORTANT NOTES:
+# 1. TensorFlow 2.15 is pinned for DeepFace compatibility
+#    (TF 2.16+ with Keras 3.x causes KerasTensor errors in DeepFace)
+#
+# 2. If you need to reinstall after updating this file:
+#    pip uninstall tensorflow tf-keras deepface numpy -y
+#    pip install -r requirements.txt
+#
+# 3. Alternative fallback versions (if 2.15 fails):
+#    tensorflow==2.13.0
+#    tf-keras==2.13.0
+#    deepface==0.0.79
+#
+# 4. Python 3.11 recommended (3.10-3.12 supported)
+#    Python 3.13 may have compatibility issues

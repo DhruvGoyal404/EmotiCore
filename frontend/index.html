@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotion Detection System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎭 Emotion Detection System</h1>
+            <p>Analyze emotions from text or images using multiple AI models</p>
+        </header>
+
+        <!-- Input Type Selector -->
+        <div class="input-selector">
+            <button id="textBtn" class="selector-btn active" onclick="selectInputType('text')">
+                📝 Text Analysis
+            </button>
+            <button id="imageBtn" class="selector-btn" onclick="selectInputType('image')">
+                🖼️ Image Analysis
+            </button>
+        </div>
+
+        <!-- Text Input Section -->
+        <div id="textSection" class="input-section">
+            <div class="form-group">
+                <label for="textInput">Enter text to analyze:</label>
+                <textarea id="textInput" placeholder="Type your text here... e.g., 'I am so happy today!'"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="textModel">Select Model:</label>
+                <select id="textModel">
+                    <option value="basic">Basic (TF-IDF + LogReg)</option>
+                    <option value="huggingface">HuggingFace (DistilRoBERTa) - Recommended</option>
+                </select>
+            </div>
+            <button class="analyze-btn" onclick="analyzeText()">
+                🔍 Analyze Text
+            </button>
+        </div>
+
+        <!-- Image Input Section -->
+        <div id="imageSection" class="input-section hidden">
+            <div class="form-group">
+                <label for="imageInput">Upload an image with a face:</label>
+                <input type="file" id="imageInput" accept="image/*" onchange="previewImage(event)">
+                <div id="imagePreview" class="image-preview"></div>
+            </div>
+            <div class="form-group">
+                <label for="imageModel">Select Model:</label>
+                <select id="imageModel">
+                    <option value="deepface">DeepFace (RetinaFace) - Most Accurate</option>
+                    <option value="opencv">OpenCV - Faster</option>
+                    <option value="custom">Custom DCNN (7-class)</option>
+                </select>
+            </div>
+            <button class="analyze-btn" onclick="analyzeImage()">
+                🔍 Analyze Image
+            </button>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div id="loading" class="loading hidden">
+            <div class="spinner"></div>
+            <p>Analyzing...</p>
+        </div>
+
+        <!-- Results Section -->
+        <div id="results" class="results-section hidden">
+            <h2>Results</h2>
+            <div class="result-card">
+                <div class="emotion-display">
+                    <span id="emotionEmoji" class="emoji">😐</span>
+                    <span id="emotionLabel" class="emotion-label">Neutral</span>
+                </div>
+                <div class="confidence-bar">
+                    <label>Confidence: <span id="confidenceValue">0%</span></label>
+                    <div class="bar-container">
+                        <div id="confidenceBar" class="bar"></div>
+                    </div>
+                </div>
+                <div class="model-info">
+                    Model used: <span id="modelUsed">-</span>
+                </div>
+            </div>
+
+            <!-- Probability Chart -->
+            <div class="probabilities-section">
+                <h3>Emotion Probabilities</h3>
+                <div id="probabilityBars" class="probability-bars"></div>
+            </div>
+        </div>
+
+        <!-- Error Display -->
+        <div id="error" class="error-section hidden">
+            <p id="errorMessage"></p>
+        </div>
+
+        <!-- API Status -->
+        <div class="api-status">
+            <span id="apiStatus">Checking API...</span>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

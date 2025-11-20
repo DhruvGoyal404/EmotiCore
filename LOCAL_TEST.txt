@@ -1,0 +1,288 @@
+================================================================================
+LOCAL SETUP GUIDE - MULTIMODAL EMOTION DETECTION SYSTEM
+================================================================================
+
+This guide will help you run the project locally on your system.
+
+================================================================================
+SYSTEM REQUIREMENTS
+================================================================================
+
+Minimum Requirements:
+- RAM: 8GB (16GB recommended)
+- Storage: 5GB free space
+- Python: 3.9-3.12 (3.11 recommended)
+- OS: Windows 10/11, macOS, or Linux
+
+Optional (for faster training):
+- NVIDIA GPU with CUDA support
+- CUDA Toolkit 11.x or 12.x
+- cuDNN 8.x
+
+================================================================================
+STEP 1: INSTALL MINICONDA/ANACONDA
+================================================================================
+
+Download from: https://docs.conda.io/en/latest/miniconda.html
+
+After installation, open a NEW terminal and verify:
+    conda --version
+
+================================================================================
+STEP 2: CREATE CONDA ENVIRONMENT
+================================================================================
+
+# Create environment with Python 3.11
+conda create -n emotion python=3.11
+
+# Activate environment
+conda activate emotion
+
+# If "conda activate" fails, run this first:
+conda init
+# Then close and reopen terminal
+
+================================================================================
+STEP 3: CLONE/DOWNLOAD PROJECT
+================================================================================
+
+# If using Git:
+git clone <repository-url>
+cd multimodal-emotion-detection-system
+
+# Or download ZIP and extract
+
+================================================================================
+STEP 4: INSTALL DEPENDENCIES
+================================================================================
+
+# Make sure you're in the project directory and environment is active
+conda activate emotion
+cd e:\multimodal-emotion-detection-system
+
+# Install all requirements
+pip install -r requirements.txt
+
+# Install HuggingFace for better text model
+pip install transformers torch
+
+# Install tf-keras for TensorFlow compatibility
+pip install tf-keras
+
+================================================================================
+STEP 5: SETUP KAGGLE API (FOR DATASET DOWNLOAD)
+================================================================================
+
+1. Go to https://kaggle.com
+2. Login/Create account
+3. Go to Account -> Create New API Token
+4. Download kaggle.json
+5. Place in project folder: .kaggle/kaggle.json
+   OR in home folder: ~/.kaggle/kaggle.json (Linux/Mac)
+                      C:\Users\<username>\.kaggle\kaggle.json (Windows)
+
+================================================================================
+STEP 6: DOWNLOAD DATASETS
+================================================================================
+
+# Run the download script
+python scripts/download_datasets.py
+
+This will download:
+- FER-2013 facial emotion dataset (28,709 training images)
+- Text emotion dataset (16,000 samples)
+
+If automatic download fails, manual download:
+1. FER-2013: https://www.kaggle.com/datasets/msambare/fer2013
+2. Extract to data/ folder
+
+================================================================================
+STEP 7: TRAIN MODELS
+================================================================================
+
+# Train all text emotion models (~5-10 minutes)
+python scripts/train_all_text_models.py
+
+# Train all facial emotion models (~15-20 minutes)
+python scripts/train_all_facial_models.py
+
+# Train 7-emotion DCNN model (optional, ~30-60 minutes)
+python scripts/train_7_emotions.py
+
+After training, models will be saved in models/ folder:
+- text_logreg.pkl, text_svm.pkl, text_xgboost.pkl, text_nb.pkl
+- facial_logreg.pkl, facial_rf.pkl, facial_xgboost.pkl
+- facial_emotion_7class.h5 (if DCNN trained)
+
+================================================================================
+STEP 8: RUN THE APPLICATION
+================================================================================
+
+OPTION A: FastAPI Backend + Frontend (Recommended)
+-------------------------------------------------
+# Start API server
+uvicorn api.main:app --reload --port 8000
+
+# Open in browser
+http://localhost:8000/docs          # Swagger API docs
+http://localhost:8000/frontend/     # Frontend UI
+
+OPTION B: Original Streamlit App
+--------------------------------
+streamlit run app.py
+
+# Open in browser
+http://localhost:8501
+
+OPTION C: Webcam Emotion Detection
+----------------------------------
+python utils/webcam_handler.py
+
+# Controls: q = quit, s = screenshot
+
+================================================================================
+STEP 9: TEST THE API
+================================================================================
+
+# Test text emotion
+curl -X POST "http://localhost:8000/api/text-emotion?model=huggingface" \
+     -H "Content-Type: application/json" \
+     -d '{"text": "I am so happy today!"}'
+
+# Or use the Swagger UI at http://localhost:8000/docs
+
+================================================================================
+GPU SETUP (OPTIONAL - FOR FASTER TRAINING)
+================================================================================
+
+If you have NVIDIA GPU:
+
+1. Check GPU:
+   nvidia-smi
+
+2. Install CUDA Toolkit:
+   https://developer.nvidia.com/cuda-downloads
+
+3. Install cuDNN:
+   https://developer.nvidia.com/cudnn
+
+4. Install TensorFlow GPU:
+   pip install tensorflow[and-cuda]
+
+5. Verify GPU:
+   python -c "import tensorflow as tf; print(tf.config.list_physical_devices('GPU'))"
+
+================================================================================
+TROUBLESHOOTING
+================================================================================
+
+ERROR: "Module not found"
+-------------------------
+pip install -r requirements.txt
+
+ERROR: "Kaggle API not found"
+-----------------------------
+pip install kaggle
+# Make sure kaggle.json is in correct location
+
+ERROR: "tf-keras not found"
+---------------------------
+pip install tf-keras
+
+ERROR: "TensorFlow GPU not detected"
+------------------------------------
+# Check CUDA installation
+nvidia-smi
+nvcc --version
+
+ERROR: "Webcam not opening"
+---------------------------
+# Try different camera ID
+python utils/webcam_handler.py --camera 1
+
+ERROR: "Port already in use"
+----------------------------
+# Use different port
+uvicorn api.main:app --reload --port 8001
+
+ERROR: "sklearn version mismatch warning"
+-----------------------------------------
+# This is just a warning, models will still work
+# To fix: retrain models with current sklearn version
+
+================================================================================
+AVAILABLE MODELS AFTER SETUP
+================================================================================
+
+TEXT EMOTION MODELS:
+1. huggingface - HuggingFace DistilRoBERTa (Best, ~90% accuracy)
+2. logreg      - Logistic Regression
+3. svm         - Support Vector Machine
+4. xgboost     - XGBoost
+5. nb          - Naive Bayes
+6. basic       - Original TF-IDF + LogReg
+
+FACIAL EMOTION MODELS:
+1. deepface    - DeepFace with RetinaFace (Best)
+2. opencv      - DeepFace with OpenCV (Faster)
+3. custom      - Custom DCNN 7-class
+4. rf          - Random Forest
+5. xgboost     - XGBoost
+6. logreg      - Logistic Regression
+
+================================================================================
+PROJECT STRUCTURE
+================================================================================
+
+multimodal-emotion-detection-system/
+├── api/
+│   └── main.py              # FastAPI backend
+├── frontend/
+│   ├── index.html           # Web UI
+│   ├── styles.css           # Styling
+│   └── app.js               # JavaScript
+├── scripts/
+│   ├── download_datasets.py # Dataset downloader
+│   ├── train_all_text_models.py
+│   ├── train_all_facial_models.py
+│   └── train_7_emotions.py
+├── utils/
+│   └── webcam_handler.py    # Webcam detection
+├── data/                    # Datasets
+├── models/                  # Trained models
+├── app.py                   # Streamlit app
+├── requirements.txt         # Dependencies
+├── Dockerfile               # Docker config
+└── text_emotion.pkl         # Original text model
+
+================================================================================
+QUICK START (COPY-PASTE COMMANDS)
+================================================================================
+
+# One-time setup
+conda create -n emotion python=3.11 -y
+conda activate emotion
+pip install -r requirements.txt
+pip install transformers torch tf-keras
+python scripts/download_datasets.py
+
+# Train models
+python scripts/train_all_text_models.py
+python scripts/train_all_facial_models.py
+
+# Run application
+uvicorn api.main:app --reload --port 8000
+
+# Open browser: http://localhost:8000/frontend/
+
+================================================================================
+CONTACT & SUPPORT
+================================================================================
+
+If you face any issues:
+1. Check this guide's troubleshooting section
+2. Ensure all dependencies are installed
+3. Verify conda environment is activated
+4. Check terminal for error messages
+
+================================================================================
