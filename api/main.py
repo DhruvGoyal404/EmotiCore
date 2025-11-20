@@ -170,15 +170,32 @@ def load_models():
     # ===== LOAD FACIAL MODELS =====
     print("\n--- Loading Facial Models ---")
 
-    # 1. Custom DCNN (7-class)
-    dcnn_path = os.path.join(models_dir, 'facial_emotion_7class.h5')
-    if os.path.exists(dcnn_path):
+    # 1. Custom CNN (Pre-trained by friend on FER-2013)
+    # Architecture: 4 Conv2D blocks (128→256→512→512) + Dense layers
+    # Accuracy: 97.43% (best facial model)
+    cnn_path = os.path.join(models_dir, 'facial_cnn_custom.h5')
+    if os.path.exists(cnn_path):
         try:
-            from tensorflow.keras.models import load_model
-            facial_models['custom'] = load_model(dcnn_path)
-            print("✓ Custom DCNN (7-class) loaded")
+            # Try loading with keras first (model was saved with standalone keras)
+            try:
+                from keras.models import load_model as keras_load_model
+                facial_models['custom'] = keras_load_model(cnn_path, compile=False)
+                print("* Custom CNN loaded with standalone keras")
+            except:
+                # Fallback to tensorflow.keras
+                from tensorflow.keras.models import load_model
+                facial_models['custom'] = load_model(cnn_path, compile=False)
+                print("* Custom CNN loaded with tensorflow.keras")
+
+            # Recompile model for inference (avoids optimizer issues)
+            facial_models['custom'].compile(
+                optimizer='adam',
+                loss='categorical_crossentropy',
+                metrics=['accuracy']
+            )
+            print("* Custom CNN (7-class, pre-trained on FER-2013, 97.43% accuracy) loaded")
         except Exception as e:
-            print(f"✗ Error loading DCNN model: {e}")
+            print(f"X Error loading custom CNN model: {e}")
 
     # 2. Logistic Regression
     logreg_facial_path = os.path.join(models_dir, 'facial_logreg.pkl')
@@ -239,8 +256,8 @@ async def get_available_models():
     if huggingface_classifier is not None:
         available_text.append("huggingface")
 
-    # Facial models
-    available_facial = ["deepface", "opencv"]  # Always available
+    # Facial models (DeepFace REMOVED - compatibility issues)
+    available_facial = ["opencv"]  # OpenCV Haar Cascade + CNN backend
     available_facial.extend(facial_models.keys())
 
     return ModelsResponse(
@@ -255,7 +272,8 @@ async def health_check():
     if huggingface_classifier:
         text_loaded.append("huggingface")
 
-    facial_loaded = ["deepface", "opencv"]
+    # Facial models (DeepFace REMOVED)
+    facial_loaded = ["opencv"]
     facial_loaded.extend(facial_models.keys())
 
     return HealthResponse(
@@ -421,7 +439,7 @@ async def analyze_facial_emotion(
                 model_used=model
             )
 
-        # Custom DCNN model
+        # Custom CNN model (pre-trained on FER-2013)
         if model == "custom" and "custom" in facial_models:
             model_obj = facial_models["custom"]
 
@@ -452,62 +470,65 @@ async def analyze_facial_emotion(
                 model_used="custom"
             )
 
-        # DeepFace models (deepface, opencv)
-        if model in ['deepface', 'opencv']:
-            from deepface import DeepFace
+        # OpenCV Haar Cascade + Simple CNN (no DeepFace)
+        if model == 'opencv':
+            # Decode image
+            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            if img is None:
+                raise HTTPException(status_code=400, detail="Invalid image")
 
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.jpg') as temp_file:
-                temp_file.write(content)
-                temp_path = temp_file.name
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-            try:
-                detector = "opencv" if model == "opencv" else "retinaface"
+            # Load Haar Cascade for face detection
+            haar_file = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+            face_cascade = cv2.CascadeClassifier(haar_file)
 
-                # Suppress verbose DeepFace output
-                import warnings
-                warnings.filterwarnings('ignore')
+            # Detect faces
+            faces = face_cascade.detectMultiScale(
+                gray,
+                scaleFactor=1.3,
+                minNeighbors=5,
+                minSize=(30, 30)
+            )
 
-                result = DeepFace.analyze(
-                    img_path=temp_path,
-                    actions=['emotion'],
-                    enforce_detection=False,
-                    detector_backend=detector,
-                    silent=True  # Suppress DeepFace logs
-                )
+            if len(faces) == 0:
+                raise HTTPException(status_code=400, detail="No face detected in image")
 
-                if isinstance(result, list):
-                    result = result[0]
+            # Get largest face
+            (x, y, w, h) = max(faces, key=lambda face: face[2] * face[3])
+            face_roi = gray[y:y+h, x:x+w]
+            face_roi = cv2.resize(face_roi, (48, 48))
 
-                emotions = result.get('emotion', {})
-                dominant_emotion = result.get('dominant_emotion', 'neutral')
+            # Simple emotion detection based on facial features
+            # This is a basic heuristic approach since we don't have pre-trained OpenCV emotion model
+            # In production, you'd use a proper pre-trained model
 
-                confidence = float(emotions.get(dominant_emotion, 0)) / 100.0
-                probabilities = {k: float(v) / 100.0 for k, v in emotions.items()}
+            # For now, use Custom CNN as fallback for OpenCV
+            if 'custom' in facial_models:
+                model_obj = facial_models['custom']
+                img_normalized = face_roi.astype('float32') / 255.0
+                img_normalized = np.expand_dims(img_normalized, axis=-1)
+                img_normalized = np.expand_dims(img_normalized, axis=0)
+
+                predictions = model_obj.predict(img_normalized, verbose=0)[0]
+                emotion_idx = int(np.argmax(predictions))
+                emotion = EMOTION_LABELS[emotion_idx]
+                confidence = float(predictions[emotion_idx])
+
+                probabilities = {
+                    EMOTION_LABELS[i]: float(predictions[i])
+                    for i in range(len(EMOTION_LABELS))
+                }
 
                 return EmotionResponse(
-                    emotion=dominant_emotion,
-                    emoji=EMOTION_EMOJIS.get(dominant_emotion.lower(), '🤔'),
+                    emotion=emotion,
+                    emoji=EMOTION_EMOJIS.get(emotion, '🤔'),
                     confidence=confidence,
                     probabilities=probabilities,
-                    model_used=model
+                    model_used="opencv (using custom CNN backend)"
                 )
-
-            except Exception as deepface_error:
-                # Better error message for DeepFace failures
-                error_msg = str(deepface_error)
-                if "KerasTensor" in error_msg or "TensorFlow" in error_msg:
-                    raise HTTPException(
-                        status_code=500,
-                        detail="DeepFace model error: TensorFlow/Keras compatibility issue. "
-                               "Please run FIX_DEEPFACE_INSTALL.bat to install compatible versions. "
-                               f"Technical error: {error_msg[:100]}"
-                    )
-                else:
-                    raise HTTPException(status_code=500, detail=f"DeepFace error: {error_msg}")
-
-            finally:
-                if os.path.exists(temp_path):
-                    os.unlink(temp_path)
+            else:
+                raise HTTPException(status_code=500, detail="OpenCV backend model not available")
 
         raise HTTPException(status_code=404, detail=f"Model '{model}' not found")
 

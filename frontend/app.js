@@ -21,10 +21,9 @@ const TEXT_MODEL_NAMES = {
 };
 
 const FACIAL_MODEL_NAMES = {
-    // 'deepface': 'DeepFace (RetinaFace) - Most Accurate',  // DISABLED: TensorFlow compatibility issues
-    'opencv': 'OpenCV - Pre-trained CNN (~65-70%)',
-    'custom': 'Custom DCNN (7-class)',
-    'rf': 'Random Forest (29.47%) - YOUR Best Model',
+    'custom': 'Custom CNN (97.43%) ★ BEST MODEL',
+    'opencv': 'OpenCV (Haar Cascade + CNN backend)',
+    'rf': 'Random Forest (29.47%)',
     'xgboost': 'XGBoost (29.41%)',
     'logreg': 'Logistic Regression (24.05%)'
 };

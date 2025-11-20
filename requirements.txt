@@ -53,18 +53,24 @@ aiofiles>=23.0.0
 pytest>=7.4.0
 httpx>=0.25.0
 
+# Additional dependencies for custom CNN model training (optional)
+jupyter>=1.0.0
+notebook>=7.0.0
+
 # IMPORTANT NOTES:
-# 1. TensorFlow 2.15 is pinned for DeepFace compatibility
-#    (TF 2.16+ with Keras 3.x causes KerasTensor errors in DeepFace)
+# 1. TensorFlow 2.15 is pinned for compatibility
+#    (TF 2.16+ with Keras 3.x causes KerasTensor errors)
 #
-# 2. If you need to reinstall after updating this file:
+# 2. keras package is included via tf-keras==2.15.0 (no separate install needed)
+#    Duplicate entries at bottom removed (numpy, pandas, tensorflow, keras already specified above)
+#
+# 3. opencv-python>=4.8.0 already includes opencv-contrib modules
+#    opencv-contrib-python duplicate removed
+#
+# 4. Flask removed - we use FastAPI for API serving
+#
+# 5. If you need to reinstall after updating this file:
 #    pip uninstall tensorflow tf-keras deepface numpy -y
 #    pip install -r requirements.txt
 #
-# 3. Alternative fallback versions (if 2.15 fails):
-#    tensorflow==2.13.0
-#    tf-keras==2.13.0
-#    deepface==0.0.79
-#
-# 4. Python 3.11 recommended (3.10-3.12 supported)
-#    Python 3.13 may have compatibility issues
+# 6. Python 3.10-3.12 recommended (3.13 may have compatibility issues)
